@@ -2,7 +2,7 @@ from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT
 
 from mpl_canvas import MplCanvas
-from binance_manager import BinanceManager
+from trading.binance_manager import BinanceManager
 
 from widgets.settings_widget import SettingsWidget
 

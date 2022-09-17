@@ -1,4 +1,4 @@
-from binance_manager import BinanceManager
+from trading.binance_manager import BinanceManager
 import rl.core as krl
 import random
 import numpy as np
