@@ -2,11 +2,10 @@ from PySide6.QtCore import QDateTime
 from binance.client import Client
 from dateutil.relativedelta import relativedelta
 
-class TradeManager(object):
-    def __init__(self, symbol) -> None:
-        self.api_key='D5EARRxdMgM4sCDciZH9in35QK3InzQ0KWOrsOqk5jZ2cA9fdyliCNCFeMoSNEKw'
-        self.api_secret='qQej89ACfrmXPbFKXxUj3uvelf05N4tDreshFCNWQrvBss9rCH0XRr0YetIhkArr'
-        self.symbol=symbol
+class BinanceManager(object):
+    def __init__(self) -> None:
+        self.api_key='jhG8KfWiueDCrmG96719XmPtjTBjkisnZrWIpKppdxe8VD7JLgF4OEfrrxIRJmLI'
+        self.api_secret='ZYkxRqYzvB3RIHCVWB1ujfjjRT76E1uwkOKyNwtavlpLf8c5g5NpK24c66cyc0pj'
 
         self.client=Client(self.api_key, self.api_secret)
         self.default_symbol='BTCUSDT'

@@ -41,7 +41,7 @@ class Environment(krl.Env):
     def getData(self, symbol, interval, start_time, end_time):
         start_timestamp=str(datetime.datetime.strptime(start_time, "%m/%d/%Y %H:%M").timestamp())
         end_timestamp=str(datetime.datetime.strptime(end_time, "%m/%d/%Y %H:%M").timestamp())
-        df=pd.DataFrame(self.binance.getKLines(symbol, interval, start_timestamp, end_timestamp))
+        df=pd.DataFrame(self.binance.get_futures_historical_klines(symbol, interval, start_timestamp, end_timestamp))
         df=df.drop(columns=[0, 6, 11])
         df=df.reset_index(drop=True)
         df.columns=['Open', 'Hight', 'Low', 'Close', 'Volume', 'QuoteAssetVolume', 'NumberOfTrades', 'TakerBuyBaseAssetVolume', 'TakerBuyQuoteAssetVolume']
