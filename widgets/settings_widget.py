@@ -5,6 +5,7 @@ from widgets.interval_widget import IntervalWidget
 from widgets.select_symbol_widget import SelectSymbolWidget
 from widgets.start_train_widget import StartTrainWidget
 from widgets.time_widget import TimepickerWidget
+from widgets.frame_size_widget import FrameSizeWidget
 
 class SettingsWidget(QWidget):
     class SettingsWidgetSignals(QObject):
@@ -19,6 +20,7 @@ class SettingsWidget(QWidget):
         self.current_interval=self.manager.get_default_interval()
         self.current_start_time=self.manager.get_default_start_time()
         self.current_end_time=self.manager.get_default_end_time()
+        self.frame_size=20 #TODO init by default value from ?
 
         self.signals=SettingsWidget.SettingsWidgetSignals()
 
@@ -34,6 +36,9 @@ class SettingsWidget(QWidget):
         end_time=TimepickerWidget('End time', self.current_end_time)
         end_time.signals.time_changes.connect(self.endTimeChanges)
 
+        frame_size=FrameSizeWidget()
+        frame_size.signals.frame_size_changed.connect(self.frameSizeChanged)
+
         train=StartTrainWidget()
         train.signals.train_signal.connect(self.train)
 
@@ -43,6 +48,7 @@ class SettingsWidget(QWidget):
         layout.addWidget(intervals)
         layout.addWidget(start_time)
         layout.addWidget(end_time)
+        layout.addWidget(frame_size)
         layout.addWidget(train)
 
         layout.addStretch()
@@ -64,6 +70,11 @@ class SettingsWidget(QWidget):
     @Slot(str)
     def endTimeChanges(self, time):
         self.current_end_time=time
+
+    @Slot(int)
+    def frameSizeChanged(self, size):
+        self.frame_size=size
+        print(self.frame_size)
 
     @Slot()
     def train(self):
