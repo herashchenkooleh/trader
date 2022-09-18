@@ -37,7 +37,4 @@ class BinanceManager(object):
         return symbols
 
     def get_futures_historical_klines(self, symbol, interval, start_time, end_time):
-        try:
-            return self.client.futures_historical_klines(symbol, interval, start_time, end_time)
-        except Exception as e:
-            print(e)
+        return self.client.futures_historical_klines(symbol, interval, start_time, end_time)

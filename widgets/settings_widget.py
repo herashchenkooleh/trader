@@ -9,7 +9,7 @@ from widgets.frame_size_widget import FrameSizeWidget
 
 class SettingsWidget(QWidget):
     class SettingsWidgetSignals(QObject):
-        start_train=Signal(str, str, str, str)   
+        start_train=Signal(str, str, str, str, int)   
 
     def __init__(self, manager) -> None:
         super().__init__()
@@ -86,4 +86,4 @@ class SettingsWidget(QWidget):
         if not isinstance(end_time, str):
             end_time=self.current_end_time.toString('dd/MM/yyyy hh:mm')
 
-        self.signals.start_train.emit(self.current_symbol, self.current_interval, start_time, end_time)
+        self.signals.start_train.emit(self.current_symbol, self.current_interval, start_time, end_time, self.frame_size)
