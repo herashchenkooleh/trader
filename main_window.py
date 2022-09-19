@@ -26,8 +26,8 @@ class MainWindow(QMainWindow):
         settings.signals.start_train.connect(self.startTrain)
 
         main_layout=QHBoxLayout()
-        main_layout.addWidget(widget)
-        main_layout.addWidget(settings)
+        main_layout.addWidget(widget, stretch=3)
+        main_layout.addWidget(settings, stretch=1)
 
         main_widget=QWidget()
         main_widget.setLayout(main_layout)

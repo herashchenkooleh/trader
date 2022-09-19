@@ -10,6 +10,7 @@ class MplCanvas(FigureCanvasQTAgg):
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = self.fig.add_subplot(1, 1, 1)
+        self.axes.tick_params(axis='x', labelrotation=45)
         self.axes.xaxis.set_major_formatter(DateFormatter('%Y-%m-%D %H:%M'))
         self.axes.grid(True)
         super(MplCanvas, self).__init__(self.fig)
@@ -27,5 +28,6 @@ class MplCanvas(FigureCanvasQTAgg):
         df['volume']=df['close'].astype(np.float)
         ohlc=np.asarray(df.loc[:, ['date', 'open', 'high', 'low', 'close']])
         candlestick(self.axes, ohlc, width=0.6, colorup='g', colordown='r')
+        self.axes.tick_params(axis='x', labelrotation=45)
 
         self.fig.canvas.draw()
