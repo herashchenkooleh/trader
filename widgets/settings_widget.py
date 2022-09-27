@@ -6,10 +6,17 @@ from widgets.select_symbol_widget import SelectSymbolWidget
 from widgets.start_train_widget import StartTrainWidget
 from widgets.time_widget import TimepickerWidget
 from widgets.frame_size_widget import FrameSizeWidget
+from widgets.chart_type_widget import ChartTypeWidget
 
 class SettingsWidget(QWidget):
     class SettingsWidgetSignals(QObject):
-        start_train=Signal(str, str, str, str, int)   
+        char_type_changed=Signal(str)
+        frame_size_changed=Signal(int)
+        interval_changed=Signal(str)
+        symbol_changed=Signal(str)
+        start_time_changed=Signal(str)
+        end_time_changed=Signal(str)
+        start_train=Signal()   
 
     def __init__(self, manager) -> None:
         super().__init__()
@@ -26,6 +33,9 @@ class SettingsWidget(QWidget):
 
         symbol=SelectSymbolWidget(self.manager, self.current_symbol)
         symbol.signals.selection_changes.connect(self.symbolChanges)
+
+        chart_type=ChartTypeWidget()
+        chart_type.signals.selection_changes.connect(self.chartTypeChanges)
 
         intervals=IntervalWidget(self.current_interval)
         intervals.signals.selection_changes.connect(self.intervalChanges)
@@ -45,6 +55,7 @@ class SettingsWidget(QWidget):
         layout=QVBoxLayout()
 
         layout.addWidget(symbol)
+        layout.addWidget(chart_type)
         layout.addWidget(intervals)
         layout.addWidget(start_time)
         layout.addWidget(end_time)
@@ -57,33 +68,33 @@ class SettingsWidget(QWidget):
 
     @Slot(str)
     def symbolChanges(self, symbol):
-        self.current_symbol=symbol
+        self.signals.symbol_changed.emit(symbol)
+
+    @Slot(str)
+    def chartTypeChanges(self, type):
+        self.signals.char_type_changed.emit(type)
 
     @Slot(str)
     def intervalChanges(self, interval):
-        self.current_interval=interval
+        self.signals.interval_changed.emit(interval)
 
     @Slot(str)
     def startTimeChanges(self, time):
-        self.current_start_time=time
+        self.signals.start_time_changed.emit(time)
 
     @Slot(str)
     def endTimeChanges(self, time):
-        self.current_end_time=time
+        self.signals.end_time_changed.emit(time)
 
     @Slot(int)
     def frameSizeChanged(self, size):
-        self.frame_size=size
-        print(self.frame_size)
+        self.signals.frame_size_changed.emit(size)
 
     @Slot()
     def train(self):
-        start_time=self.current_start_time
-        if not isinstance(start_time, str):
-            start_time=self.current_start_time.toString('dd/MM/yyyy hh:mm')
-
+        
         end_time=self.current_end_time
         if not isinstance(end_time, str):
             end_time=self.current_end_time.toString('dd/MM/yyyy hh:mm')
 
-        self.signals.start_train.emit(self.current_symbol, self.current_interval, start_time, end_time, self.frame_size)
+        self.signals.start_train.emit()

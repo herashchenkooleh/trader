@@ -24,6 +24,20 @@ class MainWindow(QMainWindow):
         
         self.binance_manager=BinanceManager()
         settings=SettingsWidget(self.binance_manager)
+
+        self.symbol=self.binance_manager.get_default_symbol()
+        self.interval=self.binance_manager.get_default_interval()
+        self.start_time=self.binance_manager.get_default_start_time().toString('dd/MM/yyyy hh:mm')
+        self.end_time=self.binance_manager.get_default_end_time().toString('dd/MM/yyyy hh:mm')
+        self.frame_size=20 #TODO init by default value from ?
+        self.chart_type='Candlestick'
+
+        settings.signals.char_type_changed.connect(self.onCharTypeChanged)
+        settings.signals.frame_size_changed.connect(self.onFrameSizeChanged)
+        settings.signals.interval_changed.connect(self.onIntervalChanged)
+        settings.signals.symbol_changed.connect(self.onSymbolChanged)
+        settings.signals.start_time_changed.connect(self.onStartTimeChanged)
+        settings.signals.end_time_changed.connect(self.onEndTimeChanged)
         settings.signals.start_train.connect(self.startTrain)
 
         main_layout=QHBoxLayout()
@@ -36,15 +50,44 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(main_widget)
         self.show()
 
-    @Slot(str, str, str, str, int)
-    def startTrain(self, symbol, interval, start_time, end_time, frame_size):
-        #self.updateChart(symbol, interval, start_time, end_time)
-        env=Environment(self.binance_manager, frame_size, symbol, interval, start_time, end_time)
-        agent=Agent(env)
-        env.setAgent(agent)
+    @Slot(str)
+    def onCharTypeChanged(self, type):
+        self.chart_type=type
 
-        agent.learn(500)
+    @Slot(int)
+    def onFrameSizeChanged(self, size):
+        self.frame_size=size
 
-    def updateChart(self, symbol, interval, start_time, end_time):
+    @Slot(str)
+    def onIntervalChanged(self, interval):
+        self.interval=interval
+
+    @Slot(str)
+    def onSymbolChanged(self, symbol):
+        self.symbol=symbol
+
+    @Slot(str)    
+    def onStartTimeChanged(self, time):
+        self.start_time=time
+        if not isinstance(self.start_time, str):
+            self.start_time=self.start_time.toString('dd/MM/yyyy hh:mm')
+    
+    @Slot(str)
+    def onEndTimeChanged(self, time):
+        self.end_time=time
+        if not isinstance(self.end_time, str):
+            self.end_time=self.end_time.toString('dd/MM/yyyy hh:mm')
+
+    @Slot()
+    def startTrain(self):
+        print(self.symbol, self.chart_type, self.interval, self.start_time, self.end_time)
+        self.updateChart(self.symbol, self.chart_type, self.interval, self.start_time, self.end_time)
+        # env=Environment(self.binance_manager, frame_size, symbol, interval, start_time, end_time)
+        # agent=Agent(env)
+        # env.setAgent(agent)
+
+        # agent.learn(500)
+
+    def updateChart(self, symbol, chart_type, interval, start_time, end_time):
         df=self.binance_manager.get_futures_historical_klines(symbol, interval, start_time, end_time)
-        self.sc.updateCandlesticks(df)
+        self.sc.updateChart(df, chart_type)

@@ -54,7 +54,6 @@ class Environment(krl.Env):
         return df
 
     def reset(self):
-        #print('reset')
         self.current_index=0
         observation=self.getNextObservation()
         self.done=self.isDone()        
@@ -109,10 +108,10 @@ class Environment(krl.Env):
     def roundAction(self, action):
         action=action.tolist()
         max_value=max(action)
-        if max_value > 0.95:
-            index=action.index(max_value)
-            return index - 1
-        return 0
+        #if max_value > 0.95:
+        index=action.index(max_value)
+        return index - 1
+        #return 0
 
     def processFuture(self, action):
         saved_current_index=self.current_index

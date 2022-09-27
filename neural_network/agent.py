@@ -5,6 +5,7 @@ from tensorflow.keras.optimizers import Adam
 from rl.agents import DDPGAgent
 from rl.memory import SequentialMemory
 from rl.random import OrnsteinUhlenbeckProcess
+from neural_network.train_callback import TrainCallback
 
 class Agent(object):
     def __init__(self, env):
@@ -48,8 +49,8 @@ class Agent(object):
                              random_process=random_process, gamma=.99, target_model_update=1e-3)
 
         self.agent.compile(Adam(learning_rate=.001, clipnorm=1.), metrics=['mae'])
-
-        self.agent.fit(self.env, nb_steps=self.env.getNumSteps() * epochs, visualize=True, verbose=1, nb_max_episode_steps=self.env.getNumSteps())
+        callbacks=[TrainCallback()]
+        self.agent.fit(self.env, nb_steps=self.env.getNumSteps() * epochs, callbacks=callbacks, visualize=True, verbose=0, nb_max_episode_steps=self.env.getNumSteps())
 
     def test(self, epochs):
         self.agent.test(self.env, nb_episodes=5, visualize=True, nb_max_episode_steps=epochs)
