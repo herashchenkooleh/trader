@@ -42,6 +42,7 @@ class MplCanvas(FigureCanvasQTAgg):
 
     def updateRenko(self, df):
         self.axes.clear()        
+        self.axes.grid(True)
         self.renko_number=500    
         renko_df=self.df_to_renko(df, self.renko_number)
         candlestick(self.axes, renko_df.loc[:,'open'].values, renko_df.loc[:, 'high'].values, renko_df.loc[:, 'low'].values, renko_df.loc[:, 'close'].values, width=1, colorup='g', colordown='r')            
@@ -51,6 +52,8 @@ class MplCanvas(FigureCanvasQTAgg):
         self.fig.canvas.draw()
 
     def updateCandlestick(self, df):
+        self.axes.clear()
+        self.axes.grid(True)
         df=pd.DataFrame(df)
         df=df.reset_index(drop=True)
         df.columns=['date', 'open', 'high', 'low', 'close', 'volume', '1', '2', '3', '4', '5', '6']

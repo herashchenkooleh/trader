@@ -4,9 +4,9 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT
 
 from mpl_canvas import MplCanvas
 from trading.binance_manager import BinanceManager
-from neural_network.agent import Agent
-from neural_network.environment import Environment
 from widgets.settings_widget import SettingsWidget
+
+from train_worker import TrainWorker
 
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
@@ -80,13 +80,9 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def startTrain(self):
-        print(self.symbol, self.chart_type, self.interval, self.start_time, self.end_time)
         self.updateChart(self.symbol, self.chart_type, self.interval, self.start_time, self.end_time)
-        # env=Environment(self.binance_manager, frame_size, symbol, interval, start_time, end_time)
-        # agent=Agent(env)
-        # env.setAgent(agent)
-
-        # agent.learn(500)
+    
+        worker=TrainWorker(self.binance_manager, self.frame_size, self.symbol, self.interval, self.start_time, self.end_time)
 
     def updateChart(self, symbol, chart_type, interval, start_time, end_time):
         df=self.binance_manager.get_futures_historical_klines(symbol, interval, start_time, end_time)
