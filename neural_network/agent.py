@@ -7,7 +7,13 @@ from rl.memory import SequentialMemory
 from rl.random import OrnsteinUhlenbeckProcess
 from neural_network.train_callback import TrainCallback
 
+from PySide6.QtCore import QObject, Signal, Slot
+
 class Agent(object):
+    class AgentSignals(QObject):
+        on_episode_begin=Signal()
+        on_episode_end=Signal()
+
     def __init__(self, env):
         self.env=env
         self.actor=Sequential()
@@ -29,6 +35,16 @@ class Agent(object):
         self.actor.add(Dense(self.env.action_space.shape[0], use_bias=True))
         self.actor.add(Activation('sigmoid'))
 
+        self.signals=Agent.AgentSignals()
+
+    @Slot()
+    def onEpisodeBegin(self):
+        self.signals.on_episode_begin.emit()
+
+    @Slot()
+    def onEpisodeEnd(self):
+        self.signals.on_episode_end.emit()
+
     def learn(self, epochs):
         action_input=Input(shape=(self.env.action_space.shape[0],), name='action_input')
         observation_input=Input(shape=(1,) + (self.env.observation_space.shape[0],), name='observation_input')
@@ -49,8 +65,13 @@ class Agent(object):
                              random_process=random_process, gamma=.99, target_model_update=1e-3)
 
         self.agent.compile(Adam(learning_rate=.001, clipnorm=1.), metrics=['mae'])
-        callbacks=[TrainCallback()]
-        self.agent.fit(self.env, nb_steps=self.env.getNumSteps() * epochs, callbacks=callbacks, visualize=True, verbose=0, nb_max_episode_steps=self.env.getNumSteps())
+        self.callback=TrainCallback()
+
+        self.callback.signals.on_episode_begin.connect(self.onEpisodeBegin)
+        self.callback.signals.on_episode_end.connect(self.onEpisodeEnd)
+
+        callbacks=[self.callback]
+        self.agent.fit(self.env, nb_steps=self.env.getNumSteps() * epochs, callbacks=callbacks, visualize=True, verbose=0, nb_max_episode_steps=1)#self.env.getNumSteps())
 
     def test(self, epochs):
         self.agent.test(self.env, nb_episodes=5, visualize=True, nb_max_episode_steps=epochs)

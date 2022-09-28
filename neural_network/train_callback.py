@@ -1,13 +1,21 @@
-from PySide6.QtWidgets import QDialog
+from PySide6.QtCore import QObject, Signal
 from ast import Call
 from rl.callbacks import Callback
 
 class TrainCallback(Callback):
+    class TrainCallbackSignals(QObject):
+        on_episode_begin=Signal()
+        on_episode_end=Signal()
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.signals=TrainCallback.TrainCallbackSignals()
+
     def on_episode_begin(self, episode, logs={}):
-        print("Begin episode: ", episode)
+        self.signals.on_episode_begin.emit()
 
     def on_episode_end(self, episode, logs={}):
-        print("End episode: ", episode)
+        self.signals.on_episode_end.emit()
 
     def on_step_begin(self, step, logs={}):
         print("Begin step: ", step)

@@ -7,7 +7,7 @@ class BinanceManager(object):
         self.api_key='jhG8KfWiueDCrmG96719XmPtjTBjkisnZrWIpKppdxe8VD7JLgF4OEfrrxIRJmLI'
         self.api_secret='ZYkxRqYzvB3RIHCVWB1ujfjjRT76E1uwkOKyNwtavlpLf8c5g5NpK24c66cyc0pj'
 
-        self.client=Client(self.api_key, self.api_secret)
+        self.client=Client(self.api_key, self.api_secret, testnet=True) #TODO select test net in UI
         self.default_symbol='BTCUSDT'
         self.default_interval='15m'
 
