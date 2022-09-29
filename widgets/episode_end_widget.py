@@ -6,9 +6,10 @@ from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 from widgets.mpl_canvas import MplCanvas
 
 class EpisodeEndWidget(QDialog):
-    def __init__(self, env) -> None:
+    def __init__(self, env, settings) -> None:
         super().__init__()
         self.env=env
+        self.settings=settings
 
         self.sc=MplCanvas(self, width=5, height=4, dpi=100)
 
@@ -20,4 +21,4 @@ class EpisodeEndWidget(QDialog):
 
         self.setLayout(layout)
 
-        #self.sc.updateChart(self.env.getData('BTCUSDR', '1d', ''), "Renko")
+        self.sc.updateChart(self.env.getData(), self.settings.chart_type)

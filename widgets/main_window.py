@@ -96,7 +96,7 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def onEpisodeEnd(self):
-        widget=EpisodeEndWidget(self.env)
+        widget=EpisodeEndWidget(self.env, self.settings)
         widget.exec_()
 
     def updateChart(self, symbol, chart_type, interval, start_time, end_time):

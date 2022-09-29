@@ -30,7 +30,7 @@ class MplCanvas(FigureCanvasQTAgg):
     def df_to_renko(self, data, number):
         data =pd.DataFrame(data)
         data.reset_index(inplace=True)
-        data.columns=['date', 'open', 'high', 'low', 'close', 'volume', '1', '2', '3', '4', '5', '6', '7']
+        data.columns=['date', 'open', 'high', 'low', 'close', 'volume', '1', '2', '3', '4']
         data=data.loc[: , ['date', 'open', 'high', 'low', 'close']]
         data=data.astype(np.float)
         df=Renko(data)
@@ -44,6 +44,7 @@ class MplCanvas(FigureCanvasQTAgg):
         self.axes.grid(True)
         self.renko_number=500    
         renko_df=self.df_to_renko(df, self.renko_number)
+        print(renko_df)
         candlestick(self.axes, renko_df.loc[:,'open'].values, renko_df.loc[:, 'high'].values, renko_df.loc[:, 'low'].values, renko_df.loc[:, 'close'].values, width=1, colorup='g', colordown='r')            
         self.fig.autofmt_xdate()
         self.fig.tight_layout()

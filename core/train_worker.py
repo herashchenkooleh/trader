@@ -1,4 +1,4 @@
-from PySide6.QtCore import QObject, QRunnable, Signal,  QThreadPool
+from PySide6.QtCore import QRunnable, QThreadPool
 
 class TrainWorker(QRunnable):
     def __init__(self, agent, settings) -> None:
