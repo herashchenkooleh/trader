@@ -1,4 +1,3 @@
-from trading.binance_manager import BinanceManager
 import rl.core as krl
 import random
 import numpy as np
@@ -20,7 +19,6 @@ class ActionSpace(krl.Space):
 
 class ObservationSpace(krl.Space):
     def __init__(self, inputs):
-        print(inputs)
         self.shape = (inputs,)
 
     def sample(self, seed=None):
@@ -30,23 +28,24 @@ class ObservationSpace(krl.Space):
         pass
 
 class Environment(krl.Env):
-    def __init__(self, binance, inputs, symbol, interval, start_time, end_time) -> None:
+    def __init__(self, binance_manager, settings) -> None:
         super().__init__()
-        self.binance=binance
-        self.df=self.getData(symbol, interval, start_time, end_time)
-        self.frame_size=inputs
+        self.binance_manager=binance_manager
+        self.settings=settings
+        
+        self.df=self.getData()
         self.action_space = ActionSpace()
-        self.observation_space = ObservationSpace(inputs * self.df.shape[1])
+        self.observation_space = ObservationSpace(self.settings.frame_size * self.df.shape[1])
         self.done=False
         self.current_index=0
 
     def setAgent(self, agent):
         self.agent=agent
 
-    def getData(self, symbol, interval, start_time, end_time):
-        start_timestamp=str(datetime.datetime.strptime(start_time, "%d/%m/%Y %H:%M").timestamp())
-        end_timestamp=str(datetime.datetime.strptime(end_time, "%d/%m/%Y %H:%M").timestamp())
-        df=pd.DataFrame(self.binance.get_futures_historical_klines(symbol, interval, start_timestamp, end_timestamp))
+    def getData(self):
+        start_timestamp=str(datetime.datetime.strptime(self.settings.start_time, "%d/%m/%Y %H:%M").timestamp())
+        end_timestamp=str(datetime.datetime.strptime(self.settings.end_time, "%d/%m/%Y %H:%M").timestamp())
+        df=pd.DataFrame(self.binance_manager.get_futures_historical_klines(self.settings.symbol, self.settings.interval, start_timestamp, end_timestamp))
         df=df.drop(columns=[0, 6, 11])
         df=df.reset_index(drop=True)
         df.columns=['Open', 'High', 'Low', 'Close', 'Volume', 'QuoteAssetVolume', 'NumberOfTrades', 'TakerBuyBaseAssetVolume', 'TakerBuyQuoteAssetVolume']
@@ -61,39 +60,39 @@ class Environment(krl.Env):
 
     def getPrice(self, action, index):
         if action == -1:
-            return self.df['Low'].values[index + self.frame_size - 1]
+            return self.df['Low'].values[index + self.settings.frame_size - 1]
         elif action == 1:
-            return self.df['High'].values[index + self.frame_size - 1]
+            return self.df['High'].values[index + self.settings.frame_size - 1]
         else:
             return 0.0
 
     def getNumSteps(self):
-        return (self.df.shape[0] - self.frame_size) + 1
+        return (self.df.shape[0] - self.settings.frame_size) + 1
 
     def isDone(self):
-        status=False if self.current_index + self.frame_size - 1 < self.df.shape[0] else True
+        status=False if self.current_index + self.settings.frame_size - 1 < self.df.shape[0] else True
         return status
 
     def getNextObservation(self):
         unnormalized_frame=np.array([
             self.df.loc[self.current_index: self.current_index +
-                        self.frame_size - 1, 'Open'].values,
+                        self.settings.frame_size - 1, 'Open'].values,
             self.df.loc[self.current_index: self.current_index +
-                        self.frame_size - 1, 'High'].values,
+                        self.settings.frame_size - 1, 'High'].values,
             self.df.loc[self.current_index: self.current_index +
-                        self.frame_size - 1, 'Low'].values,
+                        self.settings.frame_size - 1, 'Low'].values,
             self.df.loc[self.current_index: self.current_index +
-                        self.frame_size - 1, 'Close'].values,
+                        self.settings.frame_size - 1, 'Close'].values,
             self.df.loc[self.current_index: self.current_index +
-                        self.frame_size - 1, 'Volume'].values,
+                        self.settings.frame_size - 1, 'Volume'].values,
             self.df.loc[self.current_index: self.current_index +
-                        self.frame_size - 1, 'QuoteAssetVolume'].values,
+                        self.settings.frame_size - 1, 'QuoteAssetVolume'].values,
             self.df.loc[self.current_index: self.current_index +
-                        self.frame_size - 1, 'NumberOfTrades'].values,
+                        self.settings.frame_size - 1, 'NumberOfTrades'].values,
             self.df.loc[self.current_index: self.current_index +
-                        self.frame_size - 1, 'TakerBuyBaseAssetVolume'].values,
+                        self.settings.frame_size - 1, 'TakerBuyBaseAssetVolume'].values,
             self.df.loc[self.current_index: self.current_index +
-                        self.frame_size - 1, 'TakerBuyQuoteAssetVolume'].values,
+                        self.settings.frame_size - 1, 'TakerBuyQuoteAssetVolume'].values,
         ]).astype(np.float)
         normalized_frame=[]
         for unnormalized_data in unnormalized_frame:

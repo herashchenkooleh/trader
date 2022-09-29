@@ -5,17 +5,25 @@ from tensorflow.keras.optimizers import Adam
 from rl.agents import DDPGAgent
 from rl.memory import SequentialMemory
 from rl.random import OrnsteinUhlenbeckProcess
-from neural_network.train_callback import TrainCallback
 
-from PySide6.QtCore import QObject, Signal, Slot
+from PySide6.QtCore import QObject, Signal
+
+from core.train_callback import TrainCallback
 
 class Agent(object):
-    class AgentSignals(QObject):
+    class Signals(QObject):
         on_episode_begin=Signal()
         on_episode_end=Signal()
+        on_step_begin=Signal(int)
+        on_step_end=Signal(int)
+        on_action_begin=Signal(list)
+        on_action_end=Signal(list)
 
     def __init__(self, env):
         self.env=env
+        self.signals=Agent.Signals()
+
+    def init(self, file_path=''):
         self.actor=Sequential()
         self.actor.add(Flatten(input_shape=(1,) + (self.env.observation_space.shape[0],)))
         self.actor.add(Dense(self.env.observation_space.shape[0], use_bias=True))
@@ -34,16 +42,6 @@ class Agent(object):
         self.actor.add(Activation('relu'))
         self.actor.add(Dense(self.env.action_space.shape[0], use_bias=True))
         self.actor.add(Activation('sigmoid'))
-
-        self.signals=Agent.AgentSignals()
-
-    @Slot()
-    def onEpisodeBegin(self):
-        self.signals.on_episode_begin.emit()
-
-    @Slot()
-    def onEpisodeEnd(self):
-        self.signals.on_episode_end.emit()
 
     def learn(self, epochs):
         action_input=Input(shape=(self.env.action_space.shape[0],), name='action_input')
@@ -67,11 +65,15 @@ class Agent(object):
         self.agent.compile(Adam(learning_rate=.001, clipnorm=1.), metrics=['mae'])
         self.callback=TrainCallback()
 
-        self.callback.signals.on_episode_begin.connect(self.onEpisodeBegin)
-        self.callback.signals.on_episode_end.connect(self.onEpisodeEnd)
+        self.callback.signals.on_episode_begin.connect(self.signals.on_episode_begin)
+        self.callback.signals.on_episode_end.connect(self.signals.on_episode_end)
+        self.callback.signals.on_step_begin.connect(self.signals.on_step_begin)
+        self.callback.signals.on_step_end.connect(self.signals.on_step_end)
+        self.callback.signals.on_action_begin.connect(self.signals.on_action_begin)
+        self.callback.signals.on_action_end.connect(self.signals.on_action_end)
 
         callbacks=[self.callback]
-        self.agent.fit(self.env, nb_steps=self.env.getNumSteps() * epochs, callbacks=callbacks, visualize=True, verbose=0, nb_max_episode_steps=1)#self.env.getNumSteps())
+        self.agent.fit(self.env, nb_steps=self.env.getNumSteps() * epochs, callbacks=callbacks, visualize=True, verbose=0, nb_max_episode_steps=self.env.getNumSteps())
 
     def test(self, epochs):
         self.agent.test(self.env, nb_episodes=5, visualize=True, nb_max_episode_steps=epochs)

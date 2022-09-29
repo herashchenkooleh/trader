@@ -1,4 +1,3 @@
-from dataclasses import replace
 import numpy as np        
 import pandas as pd
 
@@ -50,6 +49,7 @@ class MplCanvas(FigureCanvasQTAgg):
         self.fig.tight_layout()
 
         self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
 
     def updateCandlestick(self, df):
         self.axes.clear()
@@ -66,3 +66,4 @@ class MplCanvas(FigureCanvasQTAgg):
         self.fig.tight_layout()
 
         self.fig.canvas.draw()
+        self.fig.canvas.flush_events()

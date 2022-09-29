@@ -9,7 +9,7 @@ class BinanceManager(object):
 
         self.client=Client(self.api_key, self.api_secret, testnet=True) #TODO select test net in UI
         self.default_symbol='BTCUSDT'
-        self.default_interval='15m'
+        self.default_interval='1d'
 
     def get_default_symbol(self):
         if self.client.get_symbol_info(self.default_symbol)['status']=='TRADING':
