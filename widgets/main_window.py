@@ -30,7 +30,7 @@ class MainWindow(QMainWindow):
 
         self.settings=Settings(self.binance_manager)
         self.env=Environment(self.binance_manager, self.settings)
-        self.agent=Agent(self.env)
+        self.agent=Agent(self.env, self.settings)
 
         self.agent.signals.on_episode_begin.connect(self.onEpisodeBegin)
         self.agent.signals.on_episode_end.connect(self.onEpisodeEnd)
@@ -63,7 +63,8 @@ class MainWindow(QMainWindow):
 
     @Slot(int)
     def onFrameSizeChanged(self, size):
-        self.settings.settings.frame_size=size
+        self.settings.frame_size=size
+        self.env.update()
 
     @Slot(str)
     def onIntervalChanged(self, interval):
@@ -87,6 +88,7 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def startTrain(self):
+        self.sc.updateChart(self.env)
         worker=TrainWorker(self.agent, self.settings)
         worker.start()
 
@@ -96,9 +98,6 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def onEpisodeEnd(self):
-        widget=EpisodeEndWidget(self.env, self.settings)
-        widget.exec_()
-
-    def updateChart(self, symbol, chart_type, interval, start_time, end_time):
-        df=self.binance_manager.get_futures_historical_klines(symbol, interval, start_time, end_time)
-        self.sc.updateChart(df, chart_type)
+        # widget=EpisodeEndWidget(self.env, self.settings)
+        # widget.exec_()
+        pass

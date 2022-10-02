@@ -19,27 +19,28 @@ class Agent(object):
         on_action_begin=Signal(list)
         on_action_end=Signal(list)
 
-    def __init__(self, env):
+    def __init__(self, env, settings):
         self.env=env
+        self.settings=settings
         self.signals=Agent.Signals()
 
     def init(self, file_path=''):
         self.actor=Sequential()
         self.actor.add(Flatten(input_shape=(1,) + (self.env.observation_space.shape[0],)))
-        self.actor.add(Dense(self.env.observation_space.shape[0], use_bias=True))
-        self.actor.add(Activation('relu'))
-        self.actor.add(Dense(self.env.observation_space.shape[0], use_bias=True))
-        self.actor.add(Activation('relu'))
-        self.actor.add(Dense(self.env.observation_space.shape[0], use_bias=True))
-        self.actor.add(Activation('relu'))
-        self.actor.add(Dense(self.env.observation_space.shape[0], use_bias=True))
-        self.actor.add(Activation('relu'))
-        self.actor.add(Dense(self.env.observation_space.shape[0], use_bias=True))
-        self.actor.add(Activation('relu'))
-        self.actor.add(Dense(self.env.observation_space.shape[0], use_bias=True))
-        self.actor.add(Activation('relu'))
-        self.actor.add(Dense(self.env.observation_space.shape[0], use_bias=True))
-        self.actor.add(Activation('relu'))
+        self.actor.add(Dense(self.env.observation_space.shape[0] * 2, use_bias=True))
+        self.actor.add(Activation('sigmoid'))
+        self.actor.add(Dense(self.env.observation_space.shape[0] * 2, use_bias=True))
+        self.actor.add(Activation('sigmoid'))
+        self.actor.add(Dense(self.env.observation_space.shape[0] * 2, use_bias=True))
+        self.actor.add(Activation('sigmoid'))
+        self.actor.add(Dense(self.env.observation_space.shape[0] * 2, use_bias=True))
+        self.actor.add(Activation('sigmoid'))
+        self.actor.add(Dense(self.env.observation_space.shape[0] * 2, use_bias=True))
+        self.actor.add(Activation('sigmoid'))
+        self.actor.add(Dense(self.env.observation_space.shape[0] * 2, use_bias=True))
+        self.actor.add(Activation('sigmoid'))
+        self.actor.add(Dense(self.env.observation_space.shape[0] * 2, use_bias=True))
+        self.actor.add(Activation('sigmoid'))
         self.actor.add(Dense(self.env.action_space.shape[0], use_bias=True))
         self.actor.add(Activation('sigmoid'))
 
@@ -48,22 +49,22 @@ class Agent(object):
         observation_input=Input(shape=(1,) + (self.env.observation_space.shape[0],), name='observation_input')
         flattened_observation=Flatten()(observation_input)
         x=Concatenate()([action_input, flattened_observation])
-        x=Dense(8, use_bias=False)(x)
+        x=Dense(self.env.observation_space.shape[0], use_bias=False)(x)
         x=Activation('relu')(x)
-        x=Dense(5, use_bias=True)(x)
+        x=Dense(self.env.observation_space.shape[0] / 2, use_bias=True)(x)
         x=Activation('relu')(x)
         x=Dense(1)(x)
         x=Activation('linear')(x)
         critic=Model(inputs=[action_input, observation_input], outputs=x)
         memory=SequentialMemory(limit=self.env.getNumSteps() * epochs, window_length=1)
-        random_process=OrnsteinUhlenbeckProcess(size=self.env.action_space.shape[0], theta=.15, mu=0., sigma=.3)
+        random_process=OrnsteinUhlenbeckProcess(size=self.env.action_space.shape[0], theta=.05, mu=0., sigma=.1)
 
         self.agent=DDPGAgent(nb_actions=self.env.action_space.shape[0], actor=self.actor, critic=critic, critic_action_input=action_input,
                              memory=memory, nb_steps_warmup_critic=100, nb_steps_warmup_actor=100,
                              random_process=random_process, gamma=.99, target_model_update=1e-3)
 
         self.agent.compile(Adam(learning_rate=.001, clipnorm=1.), metrics=['mae'])
-        self.callback=TrainCallback()
+        self.callback=TrainCallback(self.env, self.settings)
 
         self.callback.signals.on_episode_begin.connect(self.signals.on_episode_begin)
         self.callback.signals.on_episode_end.connect(self.signals.on_episode_end)

@@ -11,3 +11,4 @@ class Settings(object):
         self.frame_size=20
         self.chart_type='Candlestick'
         self.epochs=50
+        self.renko_n=4

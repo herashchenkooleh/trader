@@ -21,4 +21,5 @@ class EpisodeEndWidget(QDialog):
 
         self.setLayout(layout)
 
-        self.sc.updateChart(self.env.getData(), self.settings.chart_type)
+        self.sc.updateChart(self.env)
+        self.sc.updateScatter(self.env)

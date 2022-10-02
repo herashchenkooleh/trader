@@ -1,8 +1,11 @@
+from cmath import nan
 import rl.core as krl
 import random
 import numpy as np
 import pandas as pd
-import datetime
+from datetime import datetime
+
+from stocktrends import Renko
 
 class ActionSpace(krl.Space):
     def __init__(self):
@@ -32,92 +35,147 @@ class Environment(krl.Env):
         super().__init__()
         self.binance_manager=binance_manager
         self.settings=settings
+
+        self.update()
         
-        self.df=self.getData()
+
+    def update(self):
+        start_timestamp=str(datetime.strptime(self.settings.start_time, "%d/%m/%Y %H:%M").timestamp())
+        end_timestamp=str(datetime.strptime(self.settings.end_time, "%d/%m/%Y %H:%M").timestamp())
+        binance_data=pd.DataFrame(self.binance_manager.get_futures_historical_klines(self.settings.symbol, self.settings.interval, start_timestamp, end_timestamp))
+        
+        binance_data.columns=['date', 'open', 'high', 'low', 'close', 'volume', '6', '7', '8', '9', '10', '11']
+        
+        #renko
+        self.renko_df=binance_data.loc[: , ['date', 'open', 'high', 'low', 'close']]
+        self.renko_df=self.renko_df.astype(np.float)
+        self.renko_df=Renko(self.renko_df)
+        self.renko_df.brick_size=self.settings.renko_n
+        self.renko_df=self.renko_df.get_ohlc_data()
+        self.renko_df=self.renko_df.loc[: , ['open', 'high', 'low', 'close']]
+        self.renko_df=self.renko_df.reset_index(drop=True)        
+        
+        #candlestick
+        self.df=binance_data.loc[: , ['open', 'high', 'low', 'close']]
+        self.df=self.df.reset_index(drop=True)
+        self.df=self.df.astype(np.float)
+
+        #dates
+        self.dates=binance_data.loc[:, ['date']]
+        self.dates=self.dates['date'].apply(lambda x: datetime.fromtimestamp(float(x) / 1000.0))
+
         self.action_space = ActionSpace()
         self.observation_space = ObservationSpace(self.settings.frame_size * self.df.shape[1])
         self.done=False
         self.current_index=0
+        self.buy_price=[]
+        self.sell_price=[]
+        self.actions_index=[]
+
+        for i in range(1, self.settings.frame_size):
+            self.buy_price.append(nan)
+            self.sell_price.append(nan)
+            self.actions_index.append(i)
 
     def setAgent(self, agent):
         self.agent=agent
 
-    def getData(self):
-        start_timestamp=str(datetime.datetime.strptime(self.settings.start_time, "%d/%m/%Y %H:%M").timestamp())
-        end_timestamp=str(datetime.datetime.strptime(self.settings.end_time, "%d/%m/%Y %H:%M").timestamp())
-        df=pd.DataFrame(self.binance_manager.get_futures_historical_klines(self.settings.symbol, self.settings.interval, start_timestamp, end_timestamp))
-        df=df.drop(columns=[0, 6, 11])
-        df=df.reset_index(drop=True)
-        df.columns=['Open', 'High', 'Low', 'Close', 'Volume', 'QuoteAssetVolume', 'NumberOfTrades', 'TakerBuyBaseAssetVolume', 'TakerBuyQuoteAssetVolume']
-
-        return df
-
     def reset(self):
+        self.buy_price=[]
+        self.sell_price=[]
+        self.actions_index=[]
+        
+        for i in range(1, self.settings.frame_size):
+            self.buy_price.append(nan)
+            self.sell_price.append(nan)
+            self.actions_index.append(i)
+
         self.current_index=0
         observation=self.getNextObservation()
         self.done=self.isDone()        
         return observation
 
+    def getData(self):
+        if self.settings.chart_type == 'Candlestick':
+            return self.df
+        elif self.settings.chart_type == 'Renko':
+            return self.renko_df
+
+        return None
+
     def getPrice(self, action, index):
         if action == -1:
-            return self.df['Low'].values[index + self.settings.frame_size - 1]
+            return self.df['low'].values[index + self.settings.frame_size - 1]
         elif action == 1:
-            return self.df['High'].values[index + self.settings.frame_size - 1]
-        else:
-            return 0.0
+            return self.df['high'].values[index + self.settings.frame_size - 1]
+
+        return 0.0
 
     def getNumSteps(self):
-        return (self.df.shape[0] - self.settings.frame_size) + 1
+        if self.settings.chart_type == 'Candlestick':
+            return (self.df.shape[0] - self.settings.frame_size) + 1
+        elif self.settings.chart_type == 'Renko':
+            return (self.renko_df.shape[0] - self.settings.frame_size) + 1
 
     def isDone(self):
         status=False if self.current_index + self.settings.frame_size - 1 < self.df.shape[0] else True
         return status
 
     def getNextObservation(self):
-        unnormalized_frame=np.array([
-            self.df.loc[self.current_index: self.current_index +
-                        self.settings.frame_size - 1, 'Open'].values,
-            self.df.loc[self.current_index: self.current_index +
-                        self.settings.frame_size - 1, 'High'].values,
-            self.df.loc[self.current_index: self.current_index +
-                        self.settings.frame_size - 1, 'Low'].values,
-            self.df.loc[self.current_index: self.current_index +
-                        self.settings.frame_size - 1, 'Close'].values,
-            self.df.loc[self.current_index: self.current_index +
-                        self.settings.frame_size - 1, 'Volume'].values,
-            self.df.loc[self.current_index: self.current_index +
-                        self.settings.frame_size - 1, 'QuoteAssetVolume'].values,
-            self.df.loc[self.current_index: self.current_index +
-                        self.settings.frame_size - 1, 'NumberOfTrades'].values,
-            self.df.loc[self.current_index: self.current_index +
-                        self.settings.frame_size - 1, 'TakerBuyBaseAssetVolume'].values,
-            self.df.loc[self.current_index: self.current_index +
-                        self.settings.frame_size - 1, 'TakerBuyQuoteAssetVolume'].values,
-        ]).astype(np.float)
+        unnormalized_frame=[]
+        if self.settings.chart_type == 'Candlestick':
+            unnormalized_frame=list(zip(self.df.loc[self.current_index: self.current_index +
+                                self.settings.frame_size - 1, 'open'].values,
+                    self.df.loc[self.current_index: self.current_index +
+                                self.settings.frame_size - 1, 'high'].values,
+                    self.df.loc[self.current_index: self.current_index +
+                                self.settings.frame_size - 1, 'low'].values,
+                    self.df.loc[self.current_index: self.current_index +
+                                self.settings.frame_size - 1, 'close'].values))
+        elif self.settings.chart_type == 'Renko':
+            unnormalized_frame=list(zip(self.renko_df.loc[self.current_index: self.current_index +
+                                self.settings.frame_size - 1, 'open'].values,
+                    self.renko_df.loc[self.current_index: self.current_index +
+                                self.settings.frame_size - 1, 'high'].values,
+                    self.renko_df.loc[self.current_index: self.current_index +
+                                self.settings.frame_size - 1, 'low'].values,
+                    self.renko_df.loc[self.current_index: self.current_index +
+                                self.settings.frame_size - 1, 'close'].values))
+
+        linear=[]
+        for ohlc in unnormalized_frame:
+            for value in ohlc:
+                linear.append(value)
         normalized_frame=[]
-        for unnormalized_data in unnormalized_frame:
-            m=np.mean(unnormalized_data, axis=0)
-            std=np.std(unnormalized_data, axis=0)
-            normalized_frame.append(0.5 * (np.tanh(0.01 * ((unnormalized_data - m) / std)) + 1))
+
+        m=np.mean(linear, axis=0)
+        std=np.std(linear, axis=0)
+        normalized_frame.append(0.5 * (np.tanh(0.01 * ((linear - m) / std)) + 1))
         self.current_index+=1
         normalized_frame=np.array(normalized_frame)
         normalized_frame=normalized_frame.reshape(normalized_frame.shape[0] * normalized_frame.shape[1])
+        
         return normalized_frame
 
     def roundAction(self, action):
         action=action.tolist()
         max_value=max(action)
-        #if max_value > 0.95:
         index=action.index(max_value)
         return index - 1
-        #return 0
 
     def processFuture(self, action):
         saved_current_index=self.current_index
         reward=-100.0
 
         open_price=self.getPrice(action, self.current_index)
-        #print('open price: ', open_price)
+        if action == 1:
+            self.buy_price.append(open_price)
+            self.sell_price.append(nan)
+        elif action == -1:
+            self.buy_price.append(nan)
+            self.sell_price.append(open_price)
+
+        self.actions_index.append(self.current_index + self.settings.frame_size - 1)
 
         observation=self.getNextObservation()
         self.done=self.isDone()
@@ -128,7 +186,6 @@ class Environment(krl.Env):
             if predict_action == -1 or predict_action == 1:
                 close_price=self.getPrice(predict_action, self.current_index)
                 reward=float(open_price)-float(close_price)
-                #print('close price: ', close_price, predict_action, reward)
                 break
             observation=self.getNextObservation()
             self.done=self.isDone()
@@ -138,6 +195,9 @@ class Environment(krl.Env):
 
     def getRewardForAction(self, action):
         if action == 0:
+            self.buy_price.append(nan)
+            self.sell_price.append(nan)
+            self.actions_index.append(self.current_index + self.settings.frame_size - 1)
             return 0.0
         
         return self.processFuture(action)
