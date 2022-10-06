@@ -1,6 +1,11 @@
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import Dense, Activation, Flatten, Input, Concatenate
 from tensorflow.keras.optimizers import Adam
+import tensorflow.keras as tfk
+import tensorflow as tf
+tf.keras.backend.set_floatx("float64")
+import tensorflow_probability as tfp
+tfd = tfp.distributions
 
 from rl.agents import DDPGAgent
 from rl.memory import SequentialMemory
@@ -24,32 +29,22 @@ class Agent(object):
         self.settings=settings
         self.signals=Agent.Signals()
 
-    def init(self, file_path=''):
-        self.actor=Sequential()
-        self.actor.add(Flatten(input_shape=(1,) + (self.env.observation_space.shape[0],)))
-        self.actor.add(Dense(self.env.observation_space.shape[0] * 2, use_bias=True))
-        self.actor.add(Activation('sigmoid'))
-        self.actor.add(Dense(self.env.observation_space.shape[0] * 2, use_bias=True))
-        self.actor.add(Activation('sigmoid'))
-        self.actor.add(Dense(self.env.observation_space.shape[0] * 2, use_bias=True))
-        self.actor.add(Activation('sigmoid'))
-        self.actor.add(Dense(self.env.observation_space.shape[0] * 2, use_bias=True))
-        self.actor.add(Activation('sigmoid'))
-        self.actor.add(Dense(self.env.observation_space.shape[0] * 2, use_bias=True))
-        self.actor.add(Activation('sigmoid'))
-        self.actor.add(Dense(self.env.observation_space.shape[0] * 2, use_bias=True))
-        self.actor.add(Activation('sigmoid'))
-        self.actor.add(Dense(self.env.observation_space.shape[0] * 2, use_bias=True))
-        self.actor.add(Activation('sigmoid'))
-        self.actor.add(Dense(self.env.action_space.shape[0], use_bias=True))
-        self.actor.add(Activation('sigmoid'))
+    def init(self, file_path=''): 
+        n_batches=10
+        prior = tfd.Independent(tfd.Normal(loc=tf.zeros(self.env.action_space.shape[0], dtype=tf.float64), scale=1.0), reinterpreted_batch_ndims=1)
+        self.actor=tfk.Sequential([
+                tfk.layers.InputLayer(input_shape=(self.env.observation_space.shape[0],), name="input"),
+                tfk.layers.Dense(self.env.observation_space.shape[0], activation="relu", name="dense_1"),
+                tfk.layers.Dense(tfp.layers.MultivariateNormalTriL.params_size(
+                self.env.action_space.shape[0]), activation=None, name="distribution_weights"),
+                tfp.layers.MultivariateNormalTriL(event_size=self.env.action_space.shape[0], activity_regularizer=tfp.layers.KLDivergenceRegularizer(prior, weight=1/n_batches), name="output")], name="model")
 
     def learn(self, epochs):
         action_input=Input(shape=(self.env.action_space.shape[0],), name='action_input')
-        observation_input=Input(shape=(1,) + (self.env.observation_space.shape[0],), name='observation_input')
+        observation_input=Input(shape=(self.env.observation_space.shape[0],), name='observation_input')
         flattened_observation=Flatten()(observation_input)
         x=Concatenate()([action_input, flattened_observation])
-        x=Dense(self.env.observation_space.shape[0], use_bias=False)(x)
+        x=Dense(self.env.observation_space.shape[0], use_bias=True)(x)
         x=Activation('relu')(x)
         x=Dense(self.env.observation_space.shape[0] / 2, use_bias=True)(x)
         x=Activation('relu')(x)
@@ -59,10 +54,12 @@ class Agent(object):
         memory=SequentialMemory(limit=self.env.getNumSteps() * epochs, window_length=1)
         random_process=OrnsteinUhlenbeckProcess(size=self.env.action_space.shape[0], theta=.05, mu=0., sigma=.1)
 
+        custom_model_objects = { 'MultivariateNormalTriL': tfp.layers.MultivariateNormalTriL }
         self.agent=DDPGAgent(nb_actions=self.env.action_space.shape[0], actor=self.actor, critic=critic, critic_action_input=action_input,
                              memory=memory, nb_steps_warmup_critic=100, nb_steps_warmup_actor=100,
-                             random_process=random_process, gamma=.99, target_model_update=1e-3)
-
+                             random_process=random_process, gamma=.99, target_model_update=1e-3, 
+                             custom_model_objects=custom_model_objects)
+        
         self.agent.compile(Adam(learning_rate=.001, clipnorm=1.), metrics=['mae'])
         self.callback=TrainCallback(self.env, self.settings)
 
@@ -80,5 +77,5 @@ class Agent(object):
         self.agent.test(self.env, nb_episodes=5, visualize=True, nb_max_episode_steps=epochs)
 
     def predict(self, observation):
-        predicted_action=self.actor.predict(observation.reshape((1,1,observation.shape[0])))
+        predicted_action=self.actor.predict(observation.reshape((1, observation.shape[0])))
         return predicted_action

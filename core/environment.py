@@ -153,6 +153,7 @@ class Environment(krl.Env):
         normalized_frame.append(0.5 * (np.tanh(0.01 * ((linear - m) / std)) + 1))
         self.current_index+=1
         normalized_frame=np.array(normalized_frame)
+        print(normalized_frame.shape)
         normalized_frame=normalized_frame.reshape(normalized_frame.shape[0] * normalized_frame.shape[1])
         
         return normalized_frame
