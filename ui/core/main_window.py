@@ -1,16 +1,13 @@
 from PySide6.QtCore import Slot
-from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication,QMainWindow, QVBoxLayout, QHBoxLayout, QWidget
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 
-from core.agent import Agent
-from core.environment import Environment
-from core.binance_manager import BinanceManager
-from core.train_worker import TrainWorker
-from core.settings import Settings
+from core.settings.trading_settings import TradingSettings
+from core.settings.training_settings import TrainingSetting
+from core.trading.binance_manager import BinanceManager
 
-from widgets.mpl_canvas import MplCanvas
-from widgets.settings_widget import SettingsWidget
-from widgets.episode_end_widget import EpisodeEndWidget
+from ui.core.mpl_canvas import MplCanvas
+from ui.settings.settings_widget import SettingsWidget
 
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
@@ -26,26 +23,11 @@ class MainWindow(QMainWindow):
         widget=QWidget()
         widget.setLayout(layout)
         
-        self.binance_manager=BinanceManager()
+        self.traiding_settings=TradingSettings()
+        self.training_settings=TrainingSetting(QApplication.arguments()[1])
 
-        self.settings=Settings(self.binance_manager)
-        self.env=Environment(self.binance_manager, self.settings)
-        self.agent=Agent(self.env, self.settings)
-
-        self.agent.signals.on_episode_begin.connect(self.onEpisodeBegin)
-        self.agent.signals.on_episode_end.connect(self.onEpisodeEnd)
-
-        self.env.setAgent(self.agent)
-
-        settings_widget=SettingsWidget(self.binance_manager)
-
-        settings_widget.signals.char_type_changed.connect(self.onCharTypeChanged)
-        settings_widget.signals.frame_size_changed.connect(self.onFrameSizeChanged)
-        settings_widget.signals.interval_changed.connect(self.onIntervalChanged)
-        settings_widget.signals.symbol_changed.connect(self.onSymbolChanged)
-        settings_widget.signals.start_time_changed.connect(self.onStartTimeChanged)
-        settings_widget.signals.end_time_changed.connect(self.onEndTimeChanged)
-        settings_widget.signals.start_train.connect(self.startTrain)
+        self.manager=BinanceManager(QApplication.arguments()[1])
+        settings_widget=SettingsWidget(self.traiding_settings, self.training_settings, self.manager)
 
         main_layout=QHBoxLayout()
         main_layout.addWidget(widget, stretch=3)
@@ -98,6 +80,6 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def onEpisodeEnd(self):
-        # widget=EpisodeEndWidget(self.env, self.settings)
-        # widget.exec_()
+        widget=EpisodeEndWidget(self.env, self.settings)
+        widget.exec_()
         pass

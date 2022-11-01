@@ -7,13 +7,13 @@ tf.keras.backend.set_floatx("float64")
 import tensorflow_probability as tfp
 tfd = tfp.distributions
 
-from rl.agents import DDPGAgent
+from tf_agents.agents.ddpg import ddpg_agent
 from rl.memory import SequentialMemory
 from rl.random import OrnsteinUhlenbeckProcess
 
 from PySide6.QtCore import QObject, Signal
 
-from core.train_callback import TrainCallback
+from core.nn.train_callback import TrainCallback
 
 class Agent(object):
     class Signals(QObject):
@@ -24,9 +24,8 @@ class Agent(object):
         on_action_begin=Signal(list)
         on_action_end=Signal(list)
 
-    def __init__(self, env, settings):
+    def __init__(self, env):
         self.env=env
-        self.settings=settings
         self.signals=Agent.Signals()
 
     def init(self, file_path=''): 
@@ -38,6 +37,8 @@ class Agent(object):
                 tfk.layers.Dense(tfp.layers.MultivariateNormalTriL.params_size(
                 self.env.action_space.shape[0]), activation=None, name="distribution_weights"),
                 tfp.layers.MultivariateNormalTriL(event_size=self.env.action_space.shape[0], activity_regularizer=tfp.layers.KLDivergenceRegularizer(prior, weight=1/n_batches), name="output")], name="model")
+
+        print('!!!!!!!!: ', self.actor)
 
     def learn(self, epochs):
         action_input=Input(shape=(self.env.action_space.shape[0],), name='action_input')
@@ -55,7 +56,7 @@ class Agent(object):
         random_process=OrnsteinUhlenbeckProcess(size=self.env.action_space.shape[0], theta=.05, mu=0., sigma=.1)
 
         custom_model_objects = { 'MultivariateNormalTriL': tfp.layers.MultivariateNormalTriL }
-        self.agent=DDPGAgent(nb_actions=self.env.action_space.shape[0], actor=self.actor, critic=critic, critic_action_input=action_input,
+        self.agent=ddpg_agent.DdpgAgent(nb_actions=self.env.action_space.shape[0], actor=self.actor, critic=critic, critic_action_input=action_input,
                              memory=memory, nb_steps_warmup_critic=100, nb_steps_warmup_actor=100,
                              random_process=random_process, gamma=.99, target_model_update=1e-3, 
                              custom_model_objects=custom_model_objects)

@@ -2,29 +2,26 @@ from PySide6.QtCore import QDateTime
 from binance.client import Client
 from dateutil.relativedelta import relativedelta
 
+import configparser
+
 class BinanceManager(object):
-    def __init__(self) -> None:
-        self.api_key='jhG8KfWiueDCrmG96719XmPtjTBjkisnZrWIpKppdxe8VD7JLgF4OEfrrxIRJmLI'
-        self.api_secret='ZYkxRqYzvB3RIHCVWB1ujfjjRT76E1uwkOKyNwtavlpLf8c5g5NpK24c66cyc0pj'
+    def __init__(self, config_file) -> None:
+        parser=configparser.ConfigParser()
+        parser.read(config_file)
+
+        try:
+            self.api_key=parser.get('Binance', 'api_key')
+        except configparser.NoOptionError:
+            pass #TODO
+
+        try:
+            self.api_secret=parser.get('Binance', 'api_secret')
+        except configparser.NoOptionError:
+            pass #TODO
 
         self.client=Client(self.api_key, self.api_secret) #TODO select test net in UI
         self.default_symbol='BTCUSDT'
         self.default_interval='1d'
-
-    def get_default_symbol(self):
-        if self.client.get_symbol_info(self.default_symbol)['status']=='TRADING':
-            return self.default_symbol
-
-        return None
-
-    def get_default_interval(self):
-        return self.default_interval
-
-    def get_default_start_time(self):
-        return QDateTime.currentDateTime().addYears(-1)
-
-    def get_default_end_time(self):
-        return QDateTime.currentDateTime()
 
     def get_symbols_list(self):
         symbols=[]

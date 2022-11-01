@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QVBoxLayout
 
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 
-from widgets.mpl_canvas import MplCanvas
+from ui.core.mpl_canvas import MplCanvas
 
 class EpisodeEndWidget(QDialog):
     def __init__(self, env, settings) -> None:
