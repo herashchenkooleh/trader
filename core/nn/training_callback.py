@@ -1,8 +1,7 @@
 from PySide6.QtCore import QObject, Signal
 from rl.callbacks import Callback
-from widgets.episode_end_widget import EpisodeEndWidget
 
-class TrainCallback(Callback):
+class TrainingCallback(Callback):
     class Signals(QObject):
         on_episode_begin=Signal()
         on_episode_end=Signal()
@@ -13,7 +12,7 @@ class TrainCallback(Callback):
 
     def __init__(self, env, settings) -> None:
         super().__init__()
-        self.signals=TrainCallback.Signals()
+        self.signals=TrainingCallback.Signals()
         self.env=env
         self.settings=settings
 
@@ -21,9 +20,7 @@ class TrainCallback(Callback):
         self.signals.on_episode_begin.emit()
 
     def on_episode_end(self, episode, logs={}):
-        #self.signals.on_episode_end.emit()
-        widget=EpisodeEndWidget(self.env, self.settings)
-        widget.exec_()
+        self.signals.on_episode_end.emit()
 
     def on_step_begin(self, step, logs={}):
         self.signals.on_step_begin.emit(int(step))

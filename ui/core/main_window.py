@@ -4,7 +4,9 @@ from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 
 from core.settings.trading_settings import TradingSettings
 from core.settings.training_settings import TrainingSetting
-from core.trading.binance_manager import BinanceManager
+from core.brokers.binance_manager import BinanceManager
+from core.nn.training_worker import TrainingWorker
+from core.data.data_frame import DataFrame
 
 from ui.core.mpl_canvas import MplCanvas
 from ui.settings.settings_widget import SettingsWidget
@@ -13,8 +15,10 @@ class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.sc=MplCanvas(self, width=5, height=4, dpi=100)
+        self.sc.setEnabled(False)
 
         toolbar=NavigationToolbar2QT(self.sc, self)
+        toolbar.setEnabled(False)
 
         layout=QVBoxLayout()
         layout.addWidget(toolbar)
@@ -29,6 +33,8 @@ class MainWindow(QMainWindow):
         self.manager=BinanceManager(QApplication.arguments()[1])
         settings_widget=SettingsWidget(self.traiding_settings, self.training_settings, self.manager)
 
+        settings_widget.signals.start_training.connect(self.on_start_training)
+
         main_layout=QHBoxLayout()
         main_layout.addWidget(widget, stretch=3)
         main_layout.addWidget(settings_widget, stretch=1)
@@ -39,47 +45,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(main_widget)
         self.show()
 
-    @Slot(str)
-    def onCharTypeChanged(self, type):
-        self.settings.chart_type=type
-
-    @Slot(int)
-    def onFrameSizeChanged(self, size):
-        self.settings.frame_size=size
-        self.env.update()
-
-    @Slot(str)
-    def onIntervalChanged(self, interval):
-        self.settings.interval=interval
-
-    @Slot(str)
-    def onSymbolChanged(self, symbol):
-        self.settings.symbol=symbol
-
-    @Slot(str)    
-    def onStartTimeChanged(self, time):
-        self.settings.start_time=time
-        if not isinstance(self.settings.start_time, str):
-            self.settings.start_time=self.settings.start_time.toString('dd/MM/yyyy hh:mm')
-    
-    @Slot(str)
-    def onEndTimeChanged(self, time):
-        self.settings.end_time=time
-        if not isinstance(self.settings.end_time, str):
-            self.settings.end_time=self.settings.end_time.toString('dd/MM/yyyy hh:mm')
-
     @Slot()
-    def startTrain(self):
-        self.sc.updateChart(self.env)
-        worker=TrainWorker(self.agent, self.settings)
+    def on_start_training(self):
+        worker=TrainingWorker(self.training_settings)
         worker.start()
-
-    @Slot()
-    def onEpisodeBegin(self):
-        pass
-
-    @Slot()
-    def onEpisodeEnd(self):
-        widget=EpisodeEndWidget(self.env, self.settings)
-        widget.exec_()
-        pass

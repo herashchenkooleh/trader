@@ -13,7 +13,7 @@ from rl.random import OrnsteinUhlenbeckProcess
 
 from PySide6.QtCore import QObject, Signal
 
-from core.nn.train_callback import TrainCallback
+from core.nn.training_callback import TrainingCallback
 
 class Agent(object):
     class Signals(QObject):
@@ -38,8 +38,6 @@ class Agent(object):
                 self.env.action_space.shape[0]), activation=None, name="distribution_weights"),
                 tfp.layers.MultivariateNormalTriL(event_size=self.env.action_space.shape[0], activity_regularizer=tfp.layers.KLDivergenceRegularizer(prior, weight=1/n_batches), name="output")], name="model")
 
-        print('!!!!!!!!: ', self.actor)
-
     def learn(self, epochs):
         action_input=Input(shape=(self.env.action_space.shape[0],), name='action_input')
         observation_input=Input(shape=(self.env.observation_space.shape[0],), name='observation_input')
@@ -62,7 +60,7 @@ class Agent(object):
                              custom_model_objects=custom_model_objects)
         
         self.agent.compile(Adam(learning_rate=.001, clipnorm=1.), metrics=['mae'])
-        self.callback=TrainCallback(self.env, self.settings)
+        self.callback=TrainingCallback(self.env, self.settings)
 
         self.callback.signals.on_episode_begin.connect(self.signals.on_episode_begin)
         self.callback.signals.on_episode_end.connect(self.signals.on_episode_end)

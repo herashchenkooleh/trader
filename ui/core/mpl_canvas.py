@@ -22,13 +22,13 @@ class MplCanvas(FigureCanvasQTAgg):
         except KeyError:
             return ''
 
-    def updateChart(self, env):
+    def updateChart(self, data_frame):
         self.axes.clear()
         self.axes.grid(True)
         
-        self.dates=env.dates
+        self.dates=data_frame.dates
 
-        df=env.getData()
+        df=data_frame.data
         candlestick(self.axes, df.loc[:,'open'].values, df.loc[:, 'high'].values, df.loc[:, 'low'].values, df.loc[:, 'close'].values, width=1, colorup='g', colordown='r')
 
         self.axes.xaxis.set_major_formatter(ticker.FuncFormatter(self.get_date))

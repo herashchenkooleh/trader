@@ -6,7 +6,7 @@ from ui.settings.training_settings_widget import TrainingSettingsWidget
 
 class SettingsWidget(QTabWidget):
     class Signals(QObject):
-        start_trainig=Signal()
+        start_training=Signal()
         start_traiding=Signal()
         stop_traiding=Signal()
 
@@ -32,7 +32,7 @@ class SettingsWidget(QTabWidget):
     @Slot()
     def on_start_training(self):
         self.traiding_widget.enable(False)
-        self.signals.start_trainig.emit()
+        self.signals.start_training.emit()
 
     @Slot()
     def on_start_traiding(self):
